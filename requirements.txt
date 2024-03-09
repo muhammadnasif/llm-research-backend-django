@@ -5,3 +5,7 @@ pytz==2024.1
 sqlparse==0.4.4
 typing_extensions==4.10.0
 tzdata==2024.1
+openai==0.28.0
+pinecone-client==2.2.4
+docarray==0.39.0
+pydantic==1.10.8
