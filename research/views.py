@@ -35,7 +35,7 @@ from .methods import tools
 
 from tqdm.auto import tqdm
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
 COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
 
