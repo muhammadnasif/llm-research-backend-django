@@ -25,9 +25,15 @@ SECRET_KEY = "django-insecure-f0yghls#r&p1x*yh!jgibz^d@fh$g257s$$7iln1(dzh=2qg%e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    "llm-research-backend-django.onrender.com"
-]
+ALLOWED_HOSTS = ["*"]
+# settings.py
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
 
 
 # Application definition
@@ -125,3 +131,5 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
