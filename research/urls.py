@@ -5,8 +5,8 @@ from .startup import my_startup_code
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("get-response", getResponse),
+    path("llm-test", llmResponse),
     path("llm", getResponse),
 ]
 
-my_startup_code()
+# my_startup_code()

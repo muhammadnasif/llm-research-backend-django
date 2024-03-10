@@ -28,7 +28,7 @@ from .methods import tools
 
 from tqdm.auto import tqdm
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
 COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
 
@@ -40,18 +40,18 @@ def my_startup_code():
     data = []
 
     # Open the JSONL file and read each line
-    with open('research/testDataset.jsonl', 'r') as file:
-        for line in file:
-            try:
-                # Parse each line as JSON
-                json_data = json.loads(line)
-                # Append the JSON data to the list
-                data.append(json_data)
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON on line {file.readline()}: {e}")
+    # with open('research/testDataset.jsonl', 'r') as file:
+    #     for line in file:
+    #         try:
+    #             # Parse each line as JSON
+    #             json_data = json.loads(line)
+    #             # Append the JSON data to the list
+    #             data.append(json_data)
+    #         except json.JSONDecodeError as e:
+    #             print(f"Error decoding JSON on line {file.readline()}: {e}")
 
-    # Create a DataFrame from the list of JSON data
-    df = pd.DataFrame(data)
+    # # Create a DataFrame from the list of JSON data
+    # df = pd.DataFrame(data)
 
     pinecone.init(
         api_key=PINECONE_API_KEY,
@@ -73,35 +73,35 @@ def my_startup_code():
     embed_model = OpenAIEmbeddings(
         model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
 
-    data = pd.DataFrame(data)  # new
-    # data = dataset.to_pandas()  # this makes it easier to iterate over the dataset
+    # data = pd.DataFrame(data)  # new
+    # # data = dataset.to_pandas()  # this makes it easier to iterate over the dataset
 
-    batch_size = 100
+    # batch_size = 100
 
-    for i in tqdm(range(0, len(data), batch_size)):
-        i_end = min(len(data), i + batch_size)  # 13 100
-        # get batch of data
-        batch = data.iloc[i:i_end]
-        # generate unique ids for each chunk
-        ids = [f"{x['chunk-id']}" for i, x in batch.iterrows()]
-        # get text to embed
-        texts = [x['chunk'] for _, x in batch.iterrows()]
-        # embed text
-        embeds = embed_model.embed_documents(texts)
-        # get metadata to store in Pinecone
-        metadata = [
-            {'text': x['chunk'],
-             'title': x['title']} for i, x in batch.iterrows()
-        ]
-        # add to Pinecone
-        print(ids, embeds, metadata)
-        try:
-            index.upsert(vectors=zip(ids, embeds, metadata))
-            print("Inserted")
-        except Exception as e:
-            print("got exception" + str(e))
+    # for i in tqdm(range(0, len(data), batch_size)):
+    #     i_end = min(len(data), i + batch_size)  # 13 100
+    #     # get batch of data
+    #     batch = data.iloc[i:i_end]
+    #     # generate unique ids for each chunk
+    #     ids = [f"{x['chunk-id']}" for i, x in batch.iterrows()]
+    #     # get text to embed
+    #     texts = [x['chunk'] for _, x in batch.iterrows()]
+    #     # embed text
+    #     embeds = embed_model.embed_documents(texts)
+    #     # get metadata to store in Pinecone
+    #     metadata = [
+    #         {'text': x['chunk'],
+    #          'title': x['title']} for i, x in batch.iterrows()
+    #     ]
+    #     # add to Pinecone
+    #     print(ids, embeds, metadata)
+    #     try:
+    #         index.upsert(vectors=zip(ids, embeds, metadata))
+    #         print("Inserted")
+    #     except Exception as e:
+    #         print("got exception" + str(e))
 
-    print(index)
+    # print(index)
 
     text_field = "text"  # the metadata field that contains our text
 
@@ -111,8 +111,8 @@ def my_startup_code():
     )
 
     retreiver = vectorstore.as_retriever()
-    retreiver.get_relevant_documents(
-        "what is the capital of Bangladesh ? ", k=2)
+    # retreiver.get_relevant_documents(
+    #     "what is the capital of Bangladesh ? ", k=2)
 
     functions = [format_tool_to_openai_function(f) for f in tools]
     model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(functions=functions)
@@ -142,7 +142,7 @@ def my_startup_code():
     print("----------------------------------------------------------------------")
     print("----------------------------------------------------------------------")
     print("----------------------------------------------------------------------")
-
+    cache.set('chain', chain)
     # memory = ConversationBufferMemory(
     #     return_messages=True, memory_key="chat_history")
 
