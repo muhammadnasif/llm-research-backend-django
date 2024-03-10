@@ -39,13 +39,15 @@ OPENAI_API_KEY = "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"
 PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
 COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
 
+global_session = {}
+
 index_name = 'llama-2-rag'
 
 @csrf_exempt
 def getResponse(request):
     
     question = request.GET.get('q')
-    session = request.GET.get('session')
+    session_id = request.GET.get('session_id')
     
     pinecone.init(
         api_key=PINECONE_API_KEY,
@@ -97,8 +99,18 @@ def getResponse(request):
         "question": lambda x: x["question"]
     }) | prompt | model | OpenAIFunctionsAgentOutputParser()
 
-    memory = ConversationBufferMemory(
-        return_messages=True, memory_key="chat_history")
+
+
+    # memory = ConversationBufferMemory(
+    #     return_messages=True, memory_key="chat_history")
+
+    # user_memory_dict = {}
+    if session_id not in global_session:
+        global_session[session_id] = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
+
+    memory = global_session[session_id]
+
+    print(memory)
 
     agent_chain = RunnablePassthrough.assign(
         agent_scratchpad=lambda x: format_to_openai_functions(
@@ -110,6 +122,14 @@ def getResponse(request):
         agent=agent_chain, tools=tools, verbose=True, memory=memory)
 
     x = agent_executor.invoke({"question": question})   
+
+#     print(f"""
+#     CHAT HISTORY: 
+#           ---------------------
+#           {x['chat_history']}
+#             ---------------------
+
+# """)
 
     response_data = {
         "status": "success",
@@ -128,7 +148,12 @@ def getResponse(request):
 @csrf_exempt
 def llmResponse(request):
 
-    x = "Hello World"
+    if request.GET.get('q', '') not in global_session:
+        global_session[request.GET.get('q', '')] = "True"
+    
+    global_session[request.GET.get('q', '')] = "True"
+
+    print(global_session)
 
     response_data = {
         "status": "success",
