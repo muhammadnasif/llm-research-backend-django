@@ -21,6 +21,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad import format_to_openai_functions
+from django.core.cache import cache
 
 
 from .methods import tools
@@ -32,8 +33,6 @@ PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
 COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
 
 index_name = 'llama-2-rag'
-
-CHAIN = None
 
 def my_startup_code():
     # Your startup code here
@@ -130,12 +129,13 @@ def my_startup_code():
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ])
 
-    CHAIN = RunnableMap({
+    chain = RunnableMap({
         "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
         "agent_scratchpad": lambda x: x["agent_scratchpad"],
         "chat_history": lambda x: x["chat_history"],
         "question": lambda x: x["question"]
     }) | prompt | model | OpenAIFunctionsAgentOutputParser()
+    
 
     print("----------------------------------------------------------------------")
     print("----------------------------------------------------------------------")
