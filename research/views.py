@@ -36,10 +36,6 @@ from .methods import tools
 
 from tqdm.auto import tqdm
 
-# OPENAI_API_KEY = "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"
-# PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
-# COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
-
 global_session = {}
 
 index_name = 'llama-2-rag'
