@@ -139,7 +139,7 @@ def chatbot_engine(request):
 
         x = agent_executor.invoke({"question": question})
         response_data = {
-            "status": "success",
+            "success": True,
             "message": "Response received successfully",
             "data": {
                 "query" : question,
@@ -147,9 +147,9 @@ def chatbot_engine(request):
             }
         }   
         return JsonResponse(response_data)
-    except json.JSONDecodeError:
-        # Handle JSON decoding error
-        return JsonResponse({"status": "error", "message": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        error_message = str(e)
+        return JsonResponse({"success": False, "message": error_message}, status=400)
     
 
 @csrf_exempt
