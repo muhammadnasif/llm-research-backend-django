@@ -40,6 +40,7 @@ global_session = {}
 
 index_name = 'llama-2-rag'
 
+
 @csrf_exempt
 def chatbot_engine(request):
 
@@ -64,7 +65,7 @@ def chatbot_engine(request):
         pinecone.init(
             api_key=PINECONE_API_KEY,
             environment="gcp-starter"
-            )
+        )
 
         if index_name not in pinecone.list_indexes():
             pinecone.create_index(
@@ -81,7 +82,6 @@ def chatbot_engine(request):
         embed_model = OpenAIEmbeddings(
             model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
 
-
         text_field = "text"  # the metadata field that contains our text
 
         # initialize the vector store object
@@ -90,11 +90,12 @@ def chatbot_engine(request):
         )
 
         functions = [format_tool_to_openai_function(f) for f in tools]
-        model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(functions=functions)
+        model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(
+            functions=functions)
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-            "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not executed then answer from the {context} "),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not executed then answer from the {context} "),
             ("human", "{question}")
         ])
 
@@ -111,14 +112,13 @@ def chatbot_engine(request):
             "question": lambda x: x["question"]
         }) | prompt | model | OpenAIFunctionsAgentOutputParser()
 
-
-
         # memory = ConversationBufferMemory(
         #     return_messages=True, memory_key="chat_history")
 
         # user_memory_dict = {}
         if session_id not in global_session:
-            global_session[session_id] = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
+            global_session[session_id] = ConversationBufferMemory(
+                return_messages=True, memory_key="chat_history")
 
         memory = global_session[session_id]
 
@@ -129,24 +129,29 @@ def chatbot_engine(request):
                 x["intermediate_steps"]),
         ) | chain
 
-
         agent_executor = AgentExecutor(
             agent=agent_chain, tools=tools, verbose=True, memory=memory)
 
         x = agent_executor.invoke({"question": question})
         response_data = {
-            "status": "success",
+            "success": True,
             "message": "Response received successfully",
             "data": {
-                "query" : question,
+                "query": question,
                 "answer": x['output'],
             }
-        }   
+        }
         return JsonResponse(response_data)
-    except json.JSONDecodeError:
-        # Handle JSON decoding error
-        return JsonResponse({"status": "error", "message": "Invalid JSON data"}, status=400)
-    
+    except Exception as e:
+        return JsonResponse(
+            {"success": False,
+             "error": {
+                 "message": str(e),
+                 "type": type(e).__name__
+             }
+             },
+            status=e.http_status)
+
 
 @csrf_exempt
 def llmResponse(request):
