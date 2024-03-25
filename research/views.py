@@ -95,11 +95,11 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not executed then answer from the {context} "),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Always return the output you get from the function as it is. Also answer from the {context} "),
             ("human", "{question}")
         ])
 
-        prompt = ChatPromptTemplate.from_messages([
+        prompt = ChatPromptTemplate.from_messages([ 
             MessagesPlaceholder(variable_name="chat_history"),
             prompt_model,
             MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -145,13 +145,12 @@ def chatbot_engine(request):
     except Exception as e:
         return JsonResponse(
             {"success": False,
-             "error": {
-                 "message": str(e),
-                 "type": type(e).__name__
-             }
-             },
-            status=e.http_status)
-
+            "error": {
+                "message": str(e),
+                "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+            }
+            },
+            status=e.http_status if hasattr(e, "http_status") else 500)
 
 @csrf_exempt
 def llmResponse(request):
