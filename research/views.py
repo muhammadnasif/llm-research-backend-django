@@ -103,8 +103,8 @@ def chatbot_engine(request):
             ("human", "{question}")
         ])
 
-        prompt = ChatPromptTemplate.from_messages([
-            MessagesPlaceholder(variable_name="chat_history"),
+        prompt = ChatPromptTemplate.from_messages([ 
+            # MessagesPlaceholder(variable_name="chat_history"),
             prompt_model,
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
@@ -112,7 +112,7 @@ def chatbot_engine(request):
         chain = RunnableMap({
             "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
             "agent_scratchpad": lambda x: x["agent_scratchpad"],
-            "chat_history": lambda x: x["chat_history"],
+            # "chat_history": lambda x: x["chat_history"],
             "question": lambda x: x["question"]
         }) | prompt | model | OpenAIFunctionsAgentOutputParser()
 
@@ -126,7 +126,7 @@ def chatbot_engine(request):
 
         memory = global_session[session_id]
 
-        print(memory)
+        print(f"ConversationBufferMemory --- > {memory}")
 
         agent_chain = RunnablePassthrough.assign(
             agent_scratchpad=lambda x: format_to_openai_functions(
@@ -134,16 +134,28 @@ def chatbot_engine(request):
         ) | chain
 
         agent_executor = AgentExecutor(
-            agent=agent_chain, tools=tools, verbose=True, memory=memory)
+            agent=agent_chain, tools=tools, verbose=True, return_intermediate_steps=True)
 
-        x = agent_executor.invoke({"question": question})
+        llm_response = agent_executor.invoke({"question": question})
+        
+
+        if len(llm_response['intermediate_steps'] ) > 0:
+            function_infos = {
+                "function-name" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool'],
+                "parameters" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool_input']
+            }
+        else:
+            function_infos = None
+        
         response_data = {
             "success": True,
             "message": "Response received successfully",
+            "function-call-status" : 1 if function_infos else 0,
             "data": {
                 "query": question,
-                "answer": x['output'],
-            }
+                "answer": None if function_infos else llm_response['output'],
+            },
+            "function" : function_infos
         }
         return JsonResponse(response_data)
     except Exception as e:
