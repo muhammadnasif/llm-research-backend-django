@@ -36,10 +36,6 @@ from .methods import tools
 
 from tqdm.auto import tqdm
 
-# OPENAI_API_KEY = "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"
-# PINECONE_API_KEY = "d021beff-2603-4cfd-835c-f38c2c4ac075"
-# COHERE_API_KEY = "UsShXF5e8ag3p1eJbFc7XZT7t496lUbJen519VlO"
-
 global_session = {}
 
 index_name = 'llama-2-rag'
@@ -99,7 +95,7 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not executed then answer from the {context} "),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Always return the output you get from the function as it is. Also answer from the {context} "),
             ("human", "{question}")
         ])
 
@@ -161,13 +157,12 @@ def chatbot_engine(request):
     except Exception as e:
         return JsonResponse(
             {"success": False,
-             "error": {
-                 "message": str(e),
-                 "type": type(e).__name__
-             }
-             },
-            status=e.http_status)
-
+            "error": {
+                "message": str(e),
+                "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+            }
+            },
+            status=e.http_status if hasattr(e, "http_status") else 500)
 
 @csrf_exempt
 def llmResponse(request):
