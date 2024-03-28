@@ -1,35 +1,22 @@
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.http import HttpResponse, JsonResponse, FileResponse
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
-from django.conf import Settings
+from django.http import JsonResponse
 from langchain.memory import ConversationBufferMemory
-from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from .methods import tools
-from django.core.cache import cache
 import pinecone
 import time
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
-from langchain.tools import tool
-from pydantic import BaseModel, Field, constr
-from datetime import date
 from langchain.tools.render import format_tool_to_openai_function
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.prompts import MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.schema.runnable import RunnableMap
-from langchain.memory import ConversationBufferMemory
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.agents import AgentExecutor
-from langchain.agents.format_scratchpad import format_to_openai_functions
-from django.core.cache import cache
 import json
+from operator import itemgetter
 
 
 from .methods import tools
@@ -95,7 +82,7 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Always return the output you get from the function as it is. Also answer from the {context} "),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Answer from the {context}' and take user information from the '{chat_history}'"),
             ("human", "{question}")
         ])
 
@@ -108,33 +95,36 @@ def chatbot_engine(request):
         chain = RunnableMap({
             "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
             "agent_scratchpad": lambda x: x["agent_scratchpad"],
-            # "chat_history": lambda x: x["chat_history"],
+            "chat_history": lambda x: x["chat_history"],
             "question": lambda x: x["question"]
         }) | prompt | model | OpenAIFunctionsAgentOutputParser()
+
+        
+        # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True,output_key='chat_history')
 
         # memory = ConversationBufferMemory(
         #     return_messages=True, memory_key="chat_history")
 
         # user_memory_dict = {}
         if session_id not in global_session:
-            global_session[session_id] = ConversationBufferMemory(
-                return_messages=True, memory_key="chat_history")
+            global_session[session_id] = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
         memory = global_session[session_id]
 
-        print(f"ConversationBufferMemory --- > {memory}")
-
         agent_chain = RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_functions(
-                x["intermediate_steps"]),
+            agent_scratchpad=lambda x: format_to_openai_functions(x["intermediate_steps"]),
+                chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("chat_history")
         ) | chain
 
         agent_executor = AgentExecutor(
             agent=agent_chain, tools=tools, verbose=True, return_intermediate_steps=True)
 
         llm_response = agent_executor.invoke({"question": question})
-        
 
+        inputs = {"question": question}
+        global_session[session_id].save_context(inputs, {"output": llm_response['output']})
+
+        print(memory.load_memory_variables({}))
         if len(llm_response['intermediate_steps'] ) > 0:
             function_infos = {
                 "function-name" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool'],
@@ -143,6 +133,10 @@ def chatbot_engine(request):
         else:
             function_infos = None
         
+
+        print(global_session)
+
+
         response_data = {
             "success": True,
             "message": "Response received successfully",

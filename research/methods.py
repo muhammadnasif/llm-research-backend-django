@@ -42,11 +42,12 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
 
 
 class book_room_input(BaseModel):
-    room_type: str = Field(..., description="Which type of room AC or Non-AC")
-    class_type: str = Field(...,description="Which class of room it is. Business class or Economic class")
-    check_in_date: date = Field(...,description="The date user will check-in")
-    check_out_date: date = Field(...,description="The date user will check-out")
-    mobile_no : constr(regex=r'(^(?:\+?88)?01[3-9]\d{8})$') = Field(...,description="Mobile number of the user")
+    room_type: str = Field(..., description="Which type of room AC or Non-AC. Input from user")
+    class_type: str = Field(...,description="Which class of room it is. Business class or Economic class.Input from user")
+    check_in_date: date = Field(...,description="The date user will check-in. Input from user")
+    check_out_date: date = Field(...,description="The date user will check-out. Input from user")
+    mobile_no: str = Field(...,description="Mobile number of the user. Input from user")
+    # mobile_no : constr(regex=r'(^(?:\+?88)?01[3-9]\d{8})$') = Field(...,description="Mobile number of the user")
 
 @tool(args_schema=book_room_input)
 def book_room(room_type: str, class_type: str, check_in_date: date, check_out_date: date, mobile_no: constr) -> str:
@@ -54,14 +55,14 @@ def book_room(room_type: str, class_type: str, check_in_date: date, check_out_da
     Book a room with the specified details.
 
     Args:
-        room_type (str): Which type of room to book (AC or Non-AC).
-        class_type (str): Which class of room it is (Business class or Economic class).
-        check_in_date (date): The date the user will check-in.
-        check_out_date (date): The date the user will check-out.
-        mobile_no (str): Mobile number of the user.
+        room_type (str): Which type of room to book (AC or Non-AC). Input from user.
+        class_type (str): Which class of room it is (Business class or Economic class). Input from user.
+        check_in_date (date): The date the user will check-in. Input from user.
+        check_out_date (date): The date the user will check-out. Input from user.
+        mobile_no (str): Mobile number of the user. Input from user.
 
     Returns:
-        str: A message confirming the room booking.
+        str: A message confirming the room booking. 
     """
     # Placeholder logic for booking the room
   return f"Room has been booked for {room_type} {class_type} class from {check_in_date} to {check_out_date}. Mobile number: {mobile_no}."
@@ -154,23 +155,23 @@ def emergencyConciergeRequest(location : str, room: int):
 
 
 class RecommendationExcursion(BaseModel):
-  place_type : str = Field(..., description = "The type of place the customer wants to visit. Example - park, zoo, pool.")
+  place_type : str = Field(..., description = "The type of place the customer wants to visit. Example - park, zoo, pool. Take input from user")
 
 class TransportationRecommendationEntity(BaseModel):
   location : str = Field(..., description = "The place customer wants to go visit")
 
 class RoomRecommendation(BaseModel):
-  budget_highest : int = Field(..., description = "Maximum customer can pay per day for a room")
+  budget_highest : int = Field(..., description = "Maximum rent customer can pay per day for a room. Take input from user")
 
+class FoodRecommendation(BaseModel):
+  cuisine : str = Field(..., description = "The type of cuisine the customer wants to eat. Like - Chinese, Indian, Italian etc. Take input from user.")
 
-@tool(args_schema = None)
-def food_recommedation() -> str:
+@tool(args_schema = FoodRecommendation)
+def food_recommedation(cuisine : str) :
   """
   Recommend foods that is suited for the customer according to the weather from the restaurant.
   """
-  food = "Shirmp Dumplings"
 
-  return f"Sure, I believe {food} would be best for now."
 
 @tool(args_schema = TransportationRecommendationEntity)
 def transportation_recommendation(location : str) -> str:
@@ -210,7 +211,7 @@ def room_recommendation(budget_highest : int) -> str:
   """
   Room recommendation for customer with specified details
   Args:
-    budget_highest (int) : Maximum customer can pay per day for a room
+    budget_highest (int) : Maximum rent customer can pay per day for a room. Take input from user
   Returns
     str: A message with room suggestions according to budget.
   """
@@ -223,13 +224,13 @@ def room_recommendation(budget_highest : int) -> str:
   return f"Within your budget I suggest you to take the {room}"
 
 
-@tool(args_schema = None)
-def negative_requisition() -> str:
-  """
-  When a requisition is made and not sure what to do.
-  """
+# @tool(args_schema = None)
+# def negative_requisition() -> str:
+#   """
+#   When a requisition is made and not sure what to do.
+#   """
 
-  return f"Sorry, can you please say that again."
+#   return f"Sorry, can you please say that again."
 
 class HouseKeepingEntity(BaseModel):
   room_number : int = Field(..., description = "The room number that needs housekeeping service")
@@ -312,28 +313,28 @@ def request_wakeup(room_number : int, wakeup_time : str):
 
   return f"Sure, We wil wake you up at {wakeup_time}"
 
-@tool(args_schema = None)
-def redirect_to_reception() -> str:
-  """
-  Redirects the call to the hotel reception when a customer wants to directly
-  interact with a real human
-  """
+# @tool(args_schema = None)
+# def redirect_to_reception() -> str:
+#   """
+#   Redirects the call to the hotel reception when a customer wants to directly
+#   interact with a real human
+#   """
 
-  return f"We are transferring the call to the hotel reception. Hold on a bit...."
+#   return f"We are transferring the call to the hotel reception. Hold on a bit...."
 
 
 class StockAvailabilityEntity(BaseModel):
-  stock_of : int = Field(..., description = "The object that user wants to know the availibility about")
-  date : str = Field(..., description = "The date time user wants to know about the stock")
+  stock_of : int = Field(..., description = "The object that user wants to know the availibility about. Take input from user.")
+  query_date : date = Field(..., description = "The date user wants to know about the stock. Take input from user. By default take todays date")
 
 @tool(args_schema = StockAvailabilityEntity)
-def check_stock_availability(stock_of : str, data : str):
+def check_stock_availability(stock_of : str, query_date : str):
   """
   Check for amount of stock in the warehouse
 
    Args :
-    stock_of (int) : The room number the request is made from
-    date (str) : The date time user wants to know about the stock
+    stock_of (int) : The room number the request is made from. Take input from user.
+    date (str) : The date time user wants to know about the stock. By default take todays date. Take input from user.
 
   return :
     str : A message of the amount of stock
@@ -399,13 +400,13 @@ tools = [
         transportation_recommendation,
         food_recommedation,
         room_recommendation,
-        negative_requisition,
+        # negative_requisition,
         housekeeping_service_request,
         request_room_maintenance,
         request_miscellaneous,
         request_reminder,
         request_wakeup,
-        redirect_to_reception,
+        # redirect_to_reception,
         check_stock_availability,
         check_status_request,
         shuttle_service_request
