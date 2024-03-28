@@ -1,8 +1,11 @@
 from langchain.tools import tool
+import random
 import requests
 from pydantic import BaseModel, Field, constr
 import datetime
 from datetime import date
+
+ROOM_NUMBER = 305
 
 # Define the input schema
 class OpenMeteoInput(BaseModel):
@@ -275,12 +278,12 @@ def request_miscellaneous(room_number : int, request : str):
   return f"A staff is sent at you room {room_number} for the issue sir."
 
 class ReminderEntity(BaseModel):
-  room_number : int = Field(..., description = "The room number the request is made from")
+  room_number : int = Field(..., description = "The room number the request is made from. Take room number from user")
   reminder_message : str = Field(..., description = "The reminder message of the customer")
   reminder_time : str = Field(..., description = "The time to remind at")
 
 @tool(args_schema = ReminderEntity)
-def request_reminder(room_number : int, reminder_message : str, reminder_time : str):
+def request_reminder(reminder_message : str, reminder_time : str, room_number = ROOM_NUMBER):
   """
   Set an alarm for the customer to remind about the message at the mentioned time.
 
@@ -292,15 +295,15 @@ def request_reminder(room_number : int, reminder_message : str, reminder_time : 
     str: An acknowdelgement message for the customer.
   """
 
-  return f"Sure, We wil remind you at {reminder_time} about {reminder_message}."
+  return f"Sure, We wil remind you at {reminder_time} about {reminder_message}. Have a nice day - {random.randint(0,99)}"
 
 
 class WakeUpEntity(BaseModel):
   room_number : int = Field(..., description = "The room number the request is made from")
   wakeup_time : str = Field(..., description = "The time to remind at")
 
-@tool(args_schema = WakeUpEntity)
-def request_wakeup(room_number : int, wakeup_time : str):
+@tool(args_schema = WakeUpEntity, return_direct=True)
+def request_wakeup(wakeup_time : str, room_number=ROOM_NUMBER):
   """
   Set an alarm for the customer to wake him up.
 
@@ -310,6 +313,14 @@ def request_wakeup(room_number : int, wakeup_time : str):
   Returns
     str: An acknowdelgement message for the customer.
   """
+
+  return f'''
+{{
+    "room_number": "{room_number}",
+    "wakeup_time": "{wakeup_time}",
+    "from_wakeup_service": "yes i did it"
+}}
+'''
 
   return f"Sure, We wil wake you up at {wakeup_time}"
 
@@ -352,7 +363,7 @@ class StatusOfRequest(BaseModel):
   request_type : str = Field(..., description = "The type of request of the customer")
 
 @tool(args_schema = StatusOfRequest)
-def check_status_request(room_number : int, request_type : str):
+def check_status_request(request_type : str, room_number = ROOM_NUMBER ):
   """
   Checks the status of the request.
 

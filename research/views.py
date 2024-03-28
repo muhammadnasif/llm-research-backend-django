@@ -17,7 +17,9 @@ from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.schema.runnable import RunnableMap
 import json
 from operator import itemgetter
-
+from langchain.agents.format_scratchpad.openai_tools import (
+    format_to_openai_tool_messages,
+)
 
 from .methods import tools
 
@@ -86,20 +88,12 @@ def chatbot_engine(request):
             ("human", "{question}")
         ])
 
-        prompt = ChatPromptTemplate.from_messages([ 
+        prompt = ChatPromptTemplate.from_messages([
             # MessagesPlaceholder(variable_name="chat_history"),
             prompt_model,
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
-        chain = RunnableMap({
-            "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
-            "agent_scratchpad": lambda x: x["agent_scratchpad"],
-            "chat_history": lambda x: x["chat_history"],
-            "question": lambda x: x["question"]
-        }) | prompt | model | OpenAIFunctionsAgentOutputParser()
-
-        
         # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True,output_key='chat_history')
 
         # memory = ConversationBufferMemory(
@@ -107,56 +101,68 @@ def chatbot_engine(request):
 
         # user_memory_dict = {}
         if session_id not in global_session:
-            global_session[session_id] = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
+            global_session[session_id] = ConversationBufferMemory(
+                return_messages=True, memory_key="chat_history")
 
         memory = global_session[session_id]
 
-        agent_chain = RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_functions(x["intermediate_steps"]),
-                chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("chat_history")
-        ) | chain
+        chain = RunnableMap({
+            "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
+            "agent_scratchpad": lambda x: format_to_openai_tool_messages(x["intermediate_steps"]),
+            "chat_history": RunnableLambda(memory.load_memory_variables) | itemgetter("chat_history"),
+            "question": lambda x: x["question"]
+        }) | prompt | model | OpenAIFunctionsAgentOutputParser()
+
+
+
+        # agent_chain = RunnablePassthrough.assign(
+        #     agent_scratchpad=lambda x: format_to_openai_tool_messages(
+        #         x["intermediate_steps"])
+        # ) | chain
 
         agent_executor = AgentExecutor(
-            agent=agent_chain, tools=tools, verbose=True, return_intermediate_steps=True)
+            agent=chain, tools=tools, verbose=True, return_intermediate_steps=True)
 
         llm_response = agent_executor.invoke({"question": question})
 
         inputs = {"question": question}
-        global_session[session_id].save_context(inputs, {"output": llm_response['output']})
+        global_session[session_id].save_context(
+            inputs, {"output": llm_response['output']})
 
         print(memory.load_memory_variables({}))
-        if len(llm_response['intermediate_steps'] ) > 0:
+        if len(llm_response['intermediate_steps']) > 0:
             function_infos = {
-                "function-name" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool'],
-                "parameters" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool_input']
+                "function-name": json.loads(llm_response['intermediate_steps'][0][0].json())['tool'],
+                "parameters": json.loads(llm_response['intermediate_steps'][0][0].json())['tool_input']
             }
         else:
             function_infos = None
-        
 
         print(global_session)
-
 
         response_data = {
             "success": True,
             "message": "Response received successfully",
-            "function-call-status" : 1 if function_infos else 0,
+            "function-call-status": 1 if function_infos else 0,
             "data": {
                 "query": question,
-                "answer": None if function_infos else llm_response['output'],
+                # "answer": None if function_infos else llm_response['output'],
+                "answer": json.loads(llm_response['output']),
+                
             },
-            "function" : function_infos
+            "function": function_infos
         }
         return JsonResponse(response_data)
     except Exception as e:
         return JsonResponse(
             {"success": False,
-            "error": {
-                "message": str(e),
-                "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
-            }
-            },
+             "error": {
+                 "message": str(e),
+                 "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+             }
+             },
             status=e.http_status if hasattr(e, "http_status") else 500)
+
 
 @csrf_exempt
 def llmResponse(request):
