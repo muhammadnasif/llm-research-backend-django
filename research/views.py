@@ -16,7 +16,6 @@ from langchain.prompts import MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.schema.runnable import RunnableMap
 import json
-from operator import itemgetter
 
 
 from .methods import tools
@@ -30,7 +29,6 @@ index_name = 'llama-2-rag'
 
 @csrf_exempt
 def chatbot_engine(request):
-
     try:
         data = json.loads(request.body)
         question = data.get("query")
@@ -82,12 +80,12 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Answer from the {context}' and take user information from the '{chat_history}'"),
+                "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Always return the output you get from the function as it is. Also answer from the {context} "),
             ("human", "{question}")
         ])
 
         prompt = ChatPromptTemplate.from_messages([ 
-            # MessagesPlaceholder(variable_name="chat_history"),
+            MessagesPlaceholder(variable_name="chat_history"),
             prompt_model,
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
@@ -99,53 +97,46 @@ def chatbot_engine(request):
             "question": lambda x: x["question"]
         }) | prompt | model | OpenAIFunctionsAgentOutputParser()
 
-        
-        # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True,output_key='chat_history')
-
         # memory = ConversationBufferMemory(
         #     return_messages=True, memory_key="chat_history")
 
         # user_memory_dict = {}
         if session_id not in global_session:
-            global_session[session_id] = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
+            global_session[session_id] = ConversationBufferMemory(
+                return_messages=True, memory_key="chat_history")
 
         memory = global_session[session_id]
 
+        print(memory)
+
         agent_chain = RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_functions(x["intermediate_steps"]),
-                chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("chat_history")
+            agent_scratchpad=lambda x: format_to_openai_functions(
+                x["intermediate_steps"]),
         ) | chain
 
         agent_executor = AgentExecutor(
-            agent=agent_chain, tools=tools, verbose=True, return_intermediate_steps=True)
+            agent=agent_chain, tools=tools, verbose=True, memory=memory)
 
         llm_response = agent_executor.invoke({"question": question})
 
-        inputs = {"question": question}
-        global_session[session_id].save_context(inputs, {"output": llm_response['output']})
 
-        print(memory.load_memory_variables({}))
-        if len(llm_response['intermediate_steps'] ) > 0:
-            function_infos = {
-                "function-name" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool'],
-                "parameters" : json.loads(llm_response['intermediate_steps'][0][0].json())['tool_input']
-            }
+        if 'function-name' in llm_response['output']:
+            function_info = json.loads(llm_response['output'])
+            answer = None
         else:
-            function_infos = None
-        
-
-        print(global_session)
+            function_info = None
+            answer = llm_response['output']
 
 
         response_data = {
             "success": True,
             "message": "Response received successfully",
-            "function-call-status" : 1 if function_infos else 0,
+            "function-call-status" : True if 'function-name' in llm_response['output'] else False,
             "data": {
                 "query": question,
-                "answer": None if function_infos else llm_response['output'],
+                "answer": answer
             },
-            "function" : function_infos
+            "function" : function_info
         }
         return JsonResponse(response_data)
     except Exception as e:
