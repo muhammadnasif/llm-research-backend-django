@@ -80,11 +80,11 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-                "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. Always return the output you get from the function as it is. Also answer from the {context} "),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not called, then answer for the context: {context}"),
             ("human", "{question}")
         ])
 
-        prompt = ChatPromptTemplate.from_messages([ 
+        prompt = ChatPromptTemplate.from_messages([
             MessagesPlaceholder(variable_name="chat_history"),
             prompt_model,
             MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -119,7 +119,6 @@ def chatbot_engine(request):
 
         llm_response = agent_executor.invoke({"question": question})
 
-
         if 'function-name' in llm_response['output']:
             function_info = json.loads(llm_response['output'])
             answer = None
@@ -127,27 +126,27 @@ def chatbot_engine(request):
             function_info = None
             answer = llm_response['output']
 
-
         response_data = {
             "success": True,
             "message": "Response received successfully",
-            "function-call-status" : True if 'function-name' in llm_response['output'] else False,
+            "function-call-status": True if 'function-name' in llm_response['output'] else False,
             "data": {
                 "query": question,
                 "answer": answer
             },
-            "function" : function_info
+            "function": function_info
         }
         return JsonResponse(response_data)
     except Exception as e:
         return JsonResponse(
             {"success": False,
-            "error": {
-                "message": str(e),
-                "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
-            }
-            },
+             "error": {
+                 "message": str(e),
+                 "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+             }
+             },
             status=e.http_status if hasattr(e, "http_status") else 500)
+
 
 @csrf_exempt
 def llmResponse(request):
