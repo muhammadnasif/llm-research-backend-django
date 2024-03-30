@@ -80,7 +80,7 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not called, then answer for the context: {context}"),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info."),
             ("human", "{question}")
         ])
 
