@@ -98,8 +98,6 @@ def book_room(room_type: str, class_type: str, check_in_date: date, check_out_da
 class requestFoodFromRestaurant(BaseModel):
     item_name: str = Field(...,
                            description="The food item they want to order from the restaurant")
-    room_number: int = Field(...,
-                             description="Room number where the request is made")
     dine_in_type: str = Field(..., description="If the customer wants to eat in the door-step, take parcel or dine in the restaurant. It can have at most 3 values 'dine-in-room', 'dine-in-restaurant', 'parcel'")
 
 
@@ -110,7 +108,6 @@ def order_resturant_item(item_name: str,  dine_in_type: str, room_number=ROOM_NU
 
     Args:
       item_name (str) : The food item they want to order from the restaurant
-      room_number (int) : The room number from which the customer placed the order
       dine_in_type (str) : inside hotel room, dine in restaurant or parcel
 
     Returns
@@ -136,8 +133,6 @@ def order_resturant_item(item_name: str,  dine_in_type: str, room_number=ROOM_NU
 
 class requestBillingChangeRequest(BaseModel):
     complaint: str = Field(..., description="Complain about the bill. It could be that the bill is more than it should be. Or some services are charged more than it was supposed to be")
-    room_number: int = Field(
-        ..., description="Which Room number the client is making billing request. If not provided, ask the user. Do not guess.")
 
 
 @tool(args_schema=requestBillingChangeRequest, return_direct=True)
@@ -191,8 +186,6 @@ def hotel_information_request(subject: str):
 
 class ConciergeEntity(BaseModel):
     location: str = Field(..., description="Location for emergecy. Example - Garage, Lobby, Plinth at 6th floor, balcony of room, dining room etc")
-    room_number: int = Field(...,
-                      description="The room requested customer is staying")
 
 
 @tool(args_schema=ConciergeEntity, return_direct=True)
@@ -278,13 +271,6 @@ def excursion_recommendation(place_type: str) -> str:
       str: A message with excursion recommendation.
     """
 
-    # if place_type.lower() == "park":
-    #     place = "National Park"
-    # elif place_type.lower() == "zoo":
-    #     place = "National Zoo"
-    # else:
-    #     place = "National Tower of Hanoy"
-    # return f"You can visit {place}. You will definitely enjoy it."
     return f'''{{
                   "function-name": "excursion_recommendation",
                   "parameters": {{
@@ -303,12 +289,6 @@ def room_recommendation(budget_highest: int) -> str:
       str: A message with room suggestions according to budget.
     """
 
-    # if budget_highest < 1000:
-    #     room = "Normal Suite"
-    # else:
-    #     room = "Presidental Suite"
-
-    # return f"Within your budget I suggest you to take the {room}"
     return f'''{{
                   "function-name": "room_recommendation",
                   "parameters": {{
@@ -325,11 +305,8 @@ def room_recommendation(budget_highest: int) -> str:
 
 #   return f"Sorry, can you please say that again."
 
-class HouseKeepingEntity(BaseModel):
-    room_number: int = Field(..., description="The room number that needs housekeeping service")
 
-
-@tool(args_schema=HouseKeepingEntity, return_direct=True)
+@tool(return_direct=True)
 def housekeeping_service_request(room_number=ROOM_NUMBER) -> str:
     """
     Provides housekeeping service to the hotel room.
@@ -349,6 +326,27 @@ class RoomMaintenanceRequestInput(BaseModel):
     issue: str = Field(...,
                        description="The issue for which it needs maintenance service")
 
+
+class RoomAmenitiesRequest(BaseModel):
+    requested_amenity: str = Field(...,description="The amenity that the customer wants to request. Example - extra towel, extra pillow, extra blanket etc. Take input from user.")
+    
+
+@tool(args_schema=RoomAmenitiesRequest, return_direct=True)
+def request_room_amenity(requested_amenity: str, room_number=ROOM_NUMBER):
+    """
+    Request for room amenities like extra towel, extra pillow, extra blanket etc.
+
+    Args:
+      room_number (int) : The room number that needs the room amenities service
+      requested_amenity (str) : The amenity that the customer wants to request. Example - extra towel, extra pillow, extra blanket etc. Take input from user.
+    Returns
+      str: An acknowdelgement that ensures that someone is sent to the room for fixing.
+    """
+
+    return f'''{{
+                  "function-name": "request_room_amenity",
+                  "parameters": {{"requested_amenity": "{requested_amenity}","room_number": "{room_number}"}}
+              }}'''
 
 @tool(args_schema=RoomMaintenanceRequestInput, return_direct=True)
 def request_room_maintenance(issue: str, room_number=ROOM_NUMBER):
@@ -370,8 +368,6 @@ def request_room_maintenance(issue: str, room_number=ROOM_NUMBER):
               }}'''
 
 class MiscellaneousRequestEntity(BaseModel):
-    room_number: int = Field(...,
-                             description="The room number that needs the service")
     request: str = Field(..., description="The service they want")
 
 
@@ -392,10 +388,7 @@ def request_miscellaneous(request: str, room_number=ROOM_NUMBER):
 
 
 class ReminderEntity(BaseModel):
-    room_number: int = Field(...,
-                             description="The room number the request is made from")
-    reminder_message: str = Field(...,
-                                  description="The reminder message of the customer")
+    reminder_message: str = Field(..., description="The reminder message of the customer")
     reminder_time: str = Field(..., description="The time to remind at")
 
 
@@ -423,8 +416,6 @@ def request_reminder(reminder_message: str, reminder_time: str, room_number=ROOM
 
 
 class WakeUpEntity(BaseModel):
-    room_number: int = Field(...,
-                             description="The room number the request is made from")
     wakeup_time: str = Field(..., description="The time to remind at")
 
 
@@ -487,19 +478,14 @@ def check_stock_availability(stock_of: str, query_date = TODAY):
                 }}'''
 
 class StatusOfRequest(BaseModel):
-    room_number: int = Field(...,
-                             description="The room number the request is made from")
-    request_type: str = Field(...,
-                              description="The type of request of the customer")
+    request_type: str = Field(..., description="The type of request of the customer")
 
 
 @tool(args_schema=StatusOfRequest, return_direct=True)
 def check_status_request(request_type: str,room_number = ROOM_NUMBER):
     """
     Checks the status of the request.
-
     Args :
-      room_number (int) : The room number the request is made from
       request_type (int) : The type of request of the customer
 
     return :
@@ -564,5 +550,6 @@ tools = [
     # redirect_to_reception,
     check_stock_availability,
     check_status_request,
-    shuttle_service_request
+    shuttle_service_request,
+    request_room_amenity
 ]  # Add extra function names here...

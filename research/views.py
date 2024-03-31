@@ -33,10 +33,13 @@ def chatbot_engine(request):
         data = json.loads(request.body)
         question = data.get("query")
         session_id = data.get("session_id")
-
+        room_number = data.get("room")
+        
         OPENAI_API_KEY = data.get("openai_api_key")
         PINECONE_API_KEY = data.get("pinecone_api_key")
         COHERE_API_KEY = data.get("cohere_api_key")
+
+
 
         # if not OPENAI_API_KEY or not PINECONE_API_KEY or not COHERE_API_KEY:
         # throw exception
@@ -80,7 +83,7 @@ def chatbot_engine(request):
 
         prompt_model = ChatPromptTemplate.from_messages([
             ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. If function not called, then answer for the context: {context}"),
+             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info. "),
             ("human", "{question}")
         ])
 
