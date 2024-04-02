@@ -29,7 +29,7 @@ index_name = 'llama-2-rag'
 
 @csrf_exempt
 def chatbot_engine(request):
-    try:
+   
         data = json.loads(request.body)
         question = data.get("query")
         session_id = data.get("session_id")
@@ -94,7 +94,6 @@ def chatbot_engine(request):
         ])
 
         chain = RunnableMap({
-            "context": lambda x: vectorstore.similarity_search(x["question"], k=2),
             "agent_scratchpad": lambda x: x["agent_scratchpad"],
             "chat_history": lambda x: x["chat_history"],
             "question": lambda x: x["question"]
@@ -122,33 +121,35 @@ def chatbot_engine(request):
 
         llm_response = agent_executor.invoke({"question": question})
 
-        if 'function-name' in llm_response['output']:
-            function_info = json.loads(llm_response['output'])
-            answer = None
-        else:
-            function_info = None
-            answer = llm_response['output']
+        # print(llm_response['output'])
 
-        response_data = {
-            "success": True,
-            "message": "Response received successfully",
-            "function-call-status": True if 'function-name' in llm_response['output'] else False,
-            "data": {
-                "query": question,
-                "answer": answer
-            },
-            "function": function_info
-        }
-        return JsonResponse(response_data)
-    except Exception as e:
-        return JsonResponse(
-            {"success": False,
-             "error": {
-                 "message": str(e),
-                 "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
-             }
-             },
-            status=e.http_status if hasattr(e, "http_status") else 500)
+        # if 'function-name' in llm_response['output']:
+        #     function_info = json.loads(llm_response['output'])
+        #     answer = None
+        # else:
+        #     function_info = None
+        #     answer = llm_response['output']
+
+        # response_data = {
+        #     "success": True,
+        #     "message": "Response received successfully",
+        #     "function-call-status": True if 'function-name' in llm_response['output'] else False,
+        #     "data": {
+        #         "query": question,
+        #         "answer": answer
+        #     },
+        #     "function": function_info
+        # }
+        return "Okay"
+    # except Exception as e:
+    #     return JsonResponse(
+    #         {"success": False,
+    #          "error": {
+    #              "message": str(e),
+    #              "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+    #          }
+    #          },
+    #         status=e.http_status if hasattr(e, "http_status") else 500)
 
 
 @csrf_exempt
