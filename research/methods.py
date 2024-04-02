@@ -94,17 +94,16 @@ def book_room(room_type: str, class_type: str, check_in_date: date, check_out_da
               }}'''
 
 class WakeUpEntity(BaseModel):
-    wakeup_time: str = Field(..., description="The time to remind at")
+    wakeup_time: str = Field(..., description="Wake up time")
 
 
 @tool(args_schema=WakeUpEntity, return_direct=True)
 def request_wakeup(wakeup_time: str, room_number=ROOM_NUMBER):
     """
-    Set an alarm for the customer to wake him up.
+    Set an alarm for the customer to wake him up, according to the following information.
 
     Args:
-      room_number (int) : The room number that needs wakeup call
-      wakeup_time (str) : The time to remind the customer at
+      wakeup_time (str) : Wake up time. Take input from user ALWAYS
     Returns
       str: An acknowdelgement message for the customer.
     """
@@ -133,7 +132,7 @@ def housekeeping_service_request(reason:str, room_number=ROOM_NUMBER) -> str:
                   "function-name": "housekeeping_service_request",
                   "parameters": {{
                       "room_number": "{room_number}",
-                      "reason" : {reason}
+                      "reason" : "{reason}"
                   }}
               }}'''
 
@@ -168,7 +167,7 @@ class requestFoodFromRestaurant(BaseModel):
 @tool(args_schema=requestFoodFromRestaurant, return_direct=True)
 def order_resturant_item(item_name: str, item_quantity:int,  dine_in_type: str, room_number=ROOM_NUMBER) -> str:
     """
-    Order food and bevarages at the hotel restaurant with specified details.
+    Place order to the restaurant for food items with specified details. For example, I want to order a pizza from the restaurant.
 
     Args:
       item_name (str) : The food item they want to order from the restaurant
@@ -207,7 +206,6 @@ def bill_complain_request(complaint: str, room_number=ROOM_NUMBER) -> str:
     Complaints about billing with specified details.
     Args:
       complaint (str) : Complain about the bill. It could be that the bill is more than it should be. Or some services are charged more than it was supposed to be.
-      room_number (int) : The room number from where the complain is made. Not Default value, should be asked from user.
     Returns
       str: A message for confirmation of the bill complaint.
     """
@@ -288,12 +286,14 @@ def excursion_recommendation(place_type: str) -> str:
       str: A message with excursion recommendation.
     """
 
-    return f'''{{
-                  "function-name": "excursion_recommendation",
-                  "parameters": {{
-                      "place_type": "{place_type}"
-                  }}
-              }}'''
+    return f'''
+            {{
+                "function-name": "excursion_recommendation",
+                "parameters": {{
+                    "place_type": "{place_type}"
+                }}
+            }}
+            '''
 
 
 class FoodRecommendation(BaseModel):
@@ -315,17 +315,16 @@ def food_recommedation(cuisine: str):
 
 
 class RoomAmenitiesRequest(BaseModel):
-    requested_amenity: str = Field(...,description="The amenity that the customer wants to request. Example - extra towel, extra pillow, extra blanket etc. Take input from user.")
+    requested_amenity: str = Field(...,description="The amenity that the customer wants to request. Example - towel, pillow, blanket etc. Take input from user.")
 
 
 @tool(args_schema=RoomAmenitiesRequest, return_direct=True)
 def request_room_amenity(requested_amenity: str, room_number=ROOM_NUMBER):
     """
-    Request for room amenities like extra towel, extra pillow, extra blanket etc.
+    Request for room amenities like towel, pillow, blanket etc. Order for room amenities like towel, pillow, blanket etc.
 
     Args:
-      room_number (int) : The room number that needs the room amenities service
-      requested_amenity (str) : The amenity that the customer wants to request. Example - extra towel, extra pillow, extra blanket etc. Take input from user.
+      requested_amenity (str) : The amenity that the customer wants to request or order. Example - towel, pillow, blanket etc. Take input from user.
     Returns
       str: An acknowdelgement that ensures that someone is sent to the room for fixing.
     """
@@ -336,8 +335,7 @@ def request_room_amenity(requested_amenity: str, room_number=ROOM_NUMBER):
               }}'''
 
 class RoomMaintenanceRequestInput(BaseModel):
-    issue: str = Field(...,
-                       description="The issue for which it needs maintenance service")
+    issue: str = Field(..., description="The issue for which it needs maintenance service")
 
 
 @tool(args_schema=RoomMaintenanceRequestInput, return_direct=True)
@@ -368,10 +366,9 @@ class ReminderEntity(BaseModel):
 @tool(args_schema=ReminderEntity, return_direct=True)
 def request_reminder(reminder_message: str, reminder_time: str, room_number=ROOM_NUMBER):
     """
-    Set an alarm for the customer to remind about the message at the mentioned time.
+    Set an alarm or reminder alarm or reminder call for the customer to remind about the message at the mentioned time.
 
     Args:
-      room_number (int) : The room number that needs reminder service
       reminder_message (str) : The reminder message of the customer
       reminder_time (str) : The time to remind the customer at.
     Returns
@@ -395,10 +392,9 @@ class WakeUpEntity(BaseModel):
 @tool(args_schema=WakeUpEntity, return_direct=True)
 def request_wakeup(wakeup_time: str, room_number=ROOM_NUMBER):
     """
-    Set an alarm for the customer to wake him up.
+    Set an alarm for the customer to wake him up or create an wakeup call or create a wakeup reminder.
 
     Args:
-      room_number (int) : The room number that needs wakeup call
       wakeup_time (str) : The time to remind the customer at
     Returns
       str: An acknowdelgement message for the customer.
@@ -447,7 +443,6 @@ def shuttle_service_request(location: str, time: str) -> str:
 
 tools = [get_current_temperature,
          book_room,
-         request_wakeup,
          housekeeping_service_request,
          room_recommendation,
          order_resturant_item,
@@ -459,6 +454,6 @@ tools = [get_current_temperature,
          food_recommedation,
          request_room_amenity,
          request_room_maintenance,
-         request_wakeup,
+        #  request_wakeup,
          request_reminder
          ] # Add extra function names here...

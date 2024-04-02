@@ -8,4 +8,5 @@ urlpatterns = [
     path("llm-engine", chatbot_engine),
 ]
 
+llm_startup()
 # my_startup_code()

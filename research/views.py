@@ -23,82 +23,87 @@ from .methods import tools
 from tqdm.auto import tqdm
 
 global_session = {}
+global_agent_chain = None
 
 index_name = 'llama-2-rag'
 
 
+def llm_startup():
+    OPENAI_API_KEY = ""
+    PINECONE_API_KEY = ""
+
+    # throw exception
+    if not OPENAI_API_KEY or OPENAI_API_KEY == "":
+        return JsonResponse({"status": "error", "message": "Provide OPENAI API KEY"}, status=400)
+    if not PINECONE_API_KEY or PINECONE_API_KEY == "":
+        return JsonResponse({"status": "error", "message": "Provide PINECONE API KEY"}, status=400)
+    
+    pinecone.init(
+        api_key=PINECONE_API_KEY,
+        environment="gcp-starter"
+    )
+
+    if index_name not in pinecone.list_indexes():
+        pinecone.create_index(
+            index_name,
+            dimension=1536,
+            metric='cosine'
+        )
+        # wait for index to finish initialization
+        while not pinecone.describe_index(index_name).status['ready']:
+            time.sleep(1)
+
+    index = pinecone.Index(index_name)
+
+    embed_model = OpenAIEmbeddings(
+        model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
+
+    text_field = "text"  # the metadata field that contains our text
+
+    # initialize the vector store object
+    vectorstore = Pinecone(
+        index, embed_model.embed_query, text_field
+    )
+
+    functions = [format_tool_to_openai_function(f) for f in tools]
+    model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(
+        functions=functions)
+
+    prompt_model = ChatPromptTemplate.from_messages([
+        ("system",
+            "Extract the relevant information, if not explicitly provided do not guess. Extract partial info."),
+        ("human", "{question}")
+    ])
+
+    prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="chat_history"),
+        prompt_model,
+        MessagesPlaceholder(variable_name="agent_scratchpad"),
+    ])
+
+    chain = RunnableMap({
+        "agent_scratchpad": lambda x: x["agent_scratchpad"],
+        "chat_history": lambda x: x["chat_history"],
+        "question": lambda x: x["question"]
+    }) | prompt | model | OpenAIFunctionsAgentOutputParser()
+
+    agent_chain = RunnablePassthrough.assign(
+            agent_scratchpad=lambda x: format_to_openai_functions(
+                x["intermediate_steps"]),
+    ) | chain
+    
+    global global_agent_chain 
+    global_agent_chain = agent_chain
+
+
 @csrf_exempt
 def chatbot_engine(request):
-   
+    try:
         data = json.loads(request.body)
         question = data.get("query")
         session_id = data.get("session_id")
         room_number = data.get("room")
         
-        OPENAI_API_KEY = data.get("openai_api_key")
-        PINECONE_API_KEY = data.get("pinecone_api_key")
-        COHERE_API_KEY = data.get("cohere_api_key")
-
-
-
-        # if not OPENAI_API_KEY or not PINECONE_API_KEY or not COHERE_API_KEY:
-        # throw exception
-        if not OPENAI_API_KEY or OPENAI_API_KEY == "":
-            return JsonResponse({"status": "error", "message": "Provide OPENAI API KEY"}, status=400)
-        if not PINECONE_API_KEY or PINECONE_API_KEY == "":
-            return JsonResponse({"status": "error", "message": "Provide PINECONE API KEY"}, status=400)
-        if not COHERE_API_KEY or COHERE_API_KEY == "":
-            return JsonResponse({"status": "error", "message": "Provide COHERE API KEY"}, status=400)
-
-        pinecone.init(
-            api_key=PINECONE_API_KEY,
-            environment="gcp-starter"
-        )
-
-        if index_name not in pinecone.list_indexes():
-            pinecone.create_index(
-                index_name,
-                dimension=1536,
-                metric='cosine'
-            )
-            # wait for index to finish initialization
-            while not pinecone.describe_index(index_name).status['ready']:
-                time.sleep(1)
-
-        index = pinecone.Index(index_name)
-
-        embed_model = OpenAIEmbeddings(
-            model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
-
-        text_field = "text"  # the metadata field that contains our text
-
-        # initialize the vector store object
-        vectorstore = Pinecone(
-            index, embed_model.embed_query, text_field
-        )
-
-        functions = [format_tool_to_openai_function(f) for f in tools]
-        model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(
-            functions=functions)
-
-        prompt_model = ChatPromptTemplate.from_messages([
-            ("system",
-             "Extract the relevant information, if not explicitly provided do not guess. Extract partial info."),
-            ("human", "{question}")
-        ])
-
-        prompt = ChatPromptTemplate.from_messages([
-            MessagesPlaceholder(variable_name="chat_history"),
-            prompt_model,
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
-        chain = RunnableMap({
-            "agent_scratchpad": lambda x: x["agent_scratchpad"],
-            "chat_history": lambda x: x["chat_history"],
-            "question": lambda x: x["question"]
-        }) | prompt | model | OpenAIFunctionsAgentOutputParser()
-
         # memory = ConversationBufferMemory(
         #     return_messages=True, memory_key="chat_history")
 
@@ -109,47 +114,44 @@ def chatbot_engine(request):
 
         memory = global_session[session_id]
 
+        print("=========================")
         print(memory)
-
-        agent_chain = RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_functions(
-                x["intermediate_steps"]),
-        ) | chain
+        print("=========================")
 
         agent_executor = AgentExecutor(
-            agent=agent_chain, tools=tools, verbose=True, memory=memory)
+            agent=global_agent_chain, tools=tools, verbose=True, memory=memory)
 
         llm_response = agent_executor.invoke({"question": question})
 
         # print(llm_response['output'])
 
-        # if 'function-name' in llm_response['output']:
-        #     function_info = json.loads(llm_response['output'])
-        #     answer = None
-        # else:
-        #     function_info = None
-        #     answer = llm_response['output']
+        if 'function-name' in llm_response['output']:
+            function_info = json.loads(llm_response['output'])
+            answer = None
+        else:
+            function_info = None
+            answer = llm_response['output']
 
-        # response_data = {
-        #     "success": True,
-        #     "message": "Response received successfully",
-        #     "function-call-status": True if 'function-name' in llm_response['output'] else False,
-        #     "data": {
-        #         "query": question,
-        #         "answer": answer
-        #     },
-        #     "function": function_info
-        # }
-        return "Okay"
-    # except Exception as e:
-    #     return JsonResponse(
-    #         {"success": False,
-    #          "error": {
-    #              "message": str(e),
-    #              "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
-    #          }
-    #          },
-    #         status=e.http_status if hasattr(e, "http_status") else 500)
+        response_data = {
+            "success": True,
+            "message": "Response received successfully",
+            "function-call-status": True if 'function-name' in llm_response['output'] else False,
+            "data": {
+                "query": question,
+                "answer": answer
+            },
+            "function": function_info
+        }
+        return JsonResponse(response_data)
+    except Exception as e:
+        return JsonResponse(
+            {"success": False,
+             "error": {
+                 "message": str(e),
+                 "type": type(e).__name__ if hasattr(e, "__name__") else "Internal Server Error"
+             }
+             },
+            status=e.http_status if hasattr(e, "http_status") else 500)
 
 
 @csrf_exempt
