@@ -4,7 +4,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad import format_to_openai_functions
-from .methods import tools
+from .methods import tools,ROOM_NUMBER
 import pinecone
 import time
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -71,7 +71,7 @@ def llm_startup():
 
     prompt_model = ChatPromptTemplate.from_messages([
         ("system",
-            "Extract the relevant information, if not explicitly provided do not guess. Extract partial info."),
+            "only call the function(s) if it can be inferred from the users request, else start follow-up questions to clarify missing parameters."),
         ("human", "{question}")
     ])
 
@@ -114,9 +114,6 @@ def chatbot_engine(request):
 
         memory = global_session[session_id]
 
-        print("=========================")
-        print(memory)
-        print("=========================")
 
         agent_executor = AgentExecutor(
             agent=global_agent_chain, tools=tools, verbose=True, memory=memory)
@@ -142,6 +139,15 @@ def chatbot_engine(request):
             },
             "function": function_info
         }
+        global_session[session_id].chat_memory.messages = memory.chat_memory.messages[-14:]
+        # print("=========================")
+        # print(global_session)
+        # print("=========================")
+        # print(len(memory.chat_memory.messages))
+        # print("===========================")
+        # print(global_session[session_id])
+
+
         return JsonResponse(response_data)
     except Exception as e:
         return JsonResponse(

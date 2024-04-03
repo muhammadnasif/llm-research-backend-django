@@ -4,7 +4,7 @@ from .views import *
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("llm-test", llmResponse),
+    # path("llm-test", llmResponse),
     path("llm-engine", chatbot_engine),
 ]
 

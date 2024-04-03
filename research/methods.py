@@ -137,13 +137,13 @@ def housekeeping_service_request(reason:str, room_number=ROOM_NUMBER) -> str:
               }}'''
 
 class RoomRecommendation(BaseModel):
-    budget_highest: int = Field(..., description="Maximum rent customer can pay per day for a room. Take input from user")
+    budget_highest: int = Field(..., description="Maximum amount  customer can pay per day for a room.")
 
 
 @tool(args_schema=RoomRecommendation, return_direct=True)
 def room_recommendation(budget_highest: int) -> str:
     """
-    Recommend a room for a customer based on his budget. For example, I want to stay on your hotel. Please Recommend a room to stay.
+    Recommend a room for a customer based on his budget which he can pay per day for a room. For example, I want a room that costs less than 1000 per day. 
     Args:
       budget_highest (int) : Maximum rent customer can pay per day for a room. Take input from user
     Returns
@@ -383,31 +383,6 @@ def request_reminder(reminder_message: str, reminder_time: str, room_number=ROOM
                       "room_number": "{room_number}"
                   }}
               }}'''
-
-
-class WakeUpEntity(BaseModel):
-    wakeup_time: str = Field(..., description="The time to remind at")
-
-
-@tool(args_schema=WakeUpEntity, return_direct=True)
-def request_wakeup(wakeup_time: str, room_number=ROOM_NUMBER):
-    """
-    Set an alarm for the customer to wake him up or create an wakeup call or create a wakeup reminder.
-
-    Args:
-      wakeup_time (str) : The time to remind the customer at
-    Returns
-      str: An acknowdelgement message for the customer.
-    """
-
-    return f'''{{
-                  "function-name": "request_wakeup",
-                  "parameters": {{
-                      "room_number": "{room_number}",
-                      "wakeup_time": "{wakeup_time}"
-                  }}
-              }}'''
-
 
 
 
