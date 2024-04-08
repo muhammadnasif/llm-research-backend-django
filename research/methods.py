@@ -231,7 +231,12 @@ def restaurant_information(subject: str):
     Information related ot the restaurant of the hotel
     """
 
-    return f"Data is returned from resturant-faq-api/{subject}"
+    return f'''{{
+                  "function-name": "restaurant-information",
+                  "parameters": {{
+                      "subject": "{subject}"
+                  }}
+              }}'''
 
 
 @tool(args_schema=InformationEntity, return_direct=True)
@@ -300,18 +305,18 @@ class FoodRecommendation(BaseModel):
     cuisine: str = Field(..., description="The type of cuisine the customer wants to eat. Like - Chinese, Indian, Italian etc. Take input from user.")
 
 
-@tool(args_schema=FoodRecommendation, return_direct=True)
-def food_recommedation(cuisine: str):
-    """
-    Recommend foods that is suited for the customer depending on the cuisine like Chinese, Indian, Italian and others
-    """
+# @tool(args_schema=FoodRecommendation, return_direct=True)
+# def food_recommedation(cuisine: str):
+#     """
+#     Recommend foods that is suited for the customer depending on the cuisine like Chinese, Indian, Italian and others
+#     """
 
-    return f'''{{
-                  "function-name": "food_recommedation",
-                  "parameters": {{
-                      "cuisine": "{cuisine}"
-                  }}
-              }}'''
+#     return f'''{{
+#                   "function-name": "food_recommedation",
+#                   "parameters": {{
+#                       "cuisine": "{cuisine}"
+#                   }}
+#               }}'''
 
 
 class RoomAmenitiesRequest(BaseModel):
@@ -426,9 +431,10 @@ tools = [get_current_temperature,
          restaurant_information,
          transportation_recommendation,
          excursion_recommendation,
-         food_recommedation,
+        #  food_recommedation,
          request_room_amenity,
          request_room_maintenance,
         #  request_wakeup,
          request_reminder
+
          ] # Add extra function names here...
