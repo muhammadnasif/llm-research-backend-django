@@ -93,31 +93,6 @@ def book_room(room_type: str, class_type: str, check_in_date: date, check_out_da
                   }}
               }}'''
 
-class WakeUpEntity(BaseModel):
-    wakeup_time: str = Field(..., description="Wake up time")
-
-
-@tool(args_schema=WakeUpEntity, return_direct=True)
-def request_wakeup(wakeup_time: str, room_number=ROOM_NUMBER):
-    """
-    Set an alarm for the customer to wake him up, according to the following information.
-
-    Args:
-      wakeup_time (str) : Wake up time. Take input from user ALWAYS
-    Returns
-      str: An acknowdelgement message for the customer.
-    """
-
-    return f'''{{
-                  "function-name": "request_wakeup",
-                  "parameters": {{
-                      "room_number": "{room_number}",
-                      "wakeup_time": "{wakeup_time}"
-                  }}
-              }}'''
-
-
-
 class HousekeepingServiceEntity(BaseModel):
     reason: str = Field(..., description="The reason for housekeeping service is requested for")
 
@@ -219,40 +194,6 @@ def bill_complain_request(complaint: str, room_number=ROOM_NUMBER) -> str:
                   }}
               }}'''
 
-
-class InformationEntity(BaseModel):
-    subject: str = Field(...,
-                         description="The subject user wants to know about")
-
-
-@tool(args_schema=InformationEntity, return_direct=True)
-def restaurant_information(subject: str):
-    """
-    Information related ot the restaurant of the hotel
-    """
-
-    return f'''{{
-                  "function-name": "restaurant-information",
-                  "parameters": {{
-                      "subject": "{subject}"
-                  }}
-              }}'''
-
-
-@tool(args_schema=InformationEntity, return_direct=True)
-def hotel_information_request(subject: str):
-    """
-    Information related to residential hotel.
-    """
-
-    # return f"Data is returned from hotel-faq-api/{subject}"
-    return f'''{{
-                  "function-name": "hotel_information_request",
-                  "parameters": {{
-                      "subject": "{subject}"
-                  }}
-              }}'''
-
 class TransportationRecommendationEntity(BaseModel):
     location: str = Field(..., description="The place customer wants to go visit")
 
@@ -300,23 +241,6 @@ def excursion_recommendation(place_type: str) -> str:
             }}
             '''
 
-
-class FoodRecommendation(BaseModel):
-    cuisine: str = Field(..., description="The type of cuisine the customer wants to eat. Like - Chinese, Indian, Italian etc. Take input from user.")
-
-
-# @tool(args_schema=FoodRecommendation, return_direct=True)
-# def food_recommedation(cuisine: str):
-#     """
-#     Recommend foods that is suited for the customer depending on the cuisine like Chinese, Indian, Italian and others
-#     """
-
-#     return f'''{{
-#                   "function-name": "food_recommedation",
-#                   "parameters": {{
-#                       "cuisine": "{cuisine}"
-#                   }}
-#               }}'''
 
 
 class RoomAmenitiesRequest(BaseModel):
@@ -427,14 +351,9 @@ tools = [get_current_temperature,
          room_recommendation,
          order_resturant_item,
          bill_complain_request,
-         hotel_information_request,
-         restaurant_information,
          transportation_recommendation,
          excursion_recommendation,
-        #  food_recommedation,
          request_room_amenity,
          request_room_maintenance,
-        #  request_wakeup,
          request_reminder
-
          ] # Add extra function names here...
