@@ -15,6 +15,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.prompts import MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.schema.runnable import RunnableMap
+from langchain_core.messages import HumanMessage
+from langchain_core.utils.function_calling import convert_to_openai_function
+from langchain_community.tools import MoveFileTool
 import json
 
 
@@ -66,8 +69,10 @@ def llm_startup():
     )
 
     functions = [format_tool_to_openai_function(f) for f in tools]
+   
     model = ChatOpenAI(openai_api_key=OPENAI_API_KEY).bind(
         functions=functions)
+    
 
     prompt_model = ChatPromptTemplate.from_messages([
         ("system",
@@ -95,6 +100,14 @@ def llm_startup():
     global global_agent_chain 
     global_agent_chain = agent_chain
 
+    # tools1 = [MoveFileTool()]
+    # functions1= [convert_to_openai_function(t) for t in tools]
+
+    # model1 = ChatOpenAI(model="gpt-3.5-turbo",openai_api_key=OPENAI_API_KEY)
+   
+    # message=model.invoke([HumanMessage(content="move file foo to bar")], functions=functions1)
+    # print(message)
+
 
 @csrf_exempt
 def chatbot_engine(request):
@@ -112,15 +125,15 @@ def chatbot_engine(request):
             global_session[session_id] = ConversationBufferMemory(
                 return_messages=True, memory_key="chat_history")
 
+        
         memory = global_session[session_id]
-
 
         agent_executor = AgentExecutor(
             agent=global_agent_chain, tools=tools, verbose=True, memory=memory)
 
         llm_response = agent_executor.invoke({"question": question})
 
-        # print(llm_response['output'])
+        print(llm_response)
 
         if 'function-name' in llm_response['output']:
             function_info = json.loads(llm_response['output'])

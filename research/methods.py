@@ -98,7 +98,7 @@ class HousekeepingServiceEntity(BaseModel):
 
 
 @tool(args_schema = HousekeepingServiceEntity, return_direct=True)
-def housekeeping_service_request(reason:str, room_number=ROOM_NUMBER) -> str:
+def housekeeping_service_request(reason:str) -> str:
     """
     Provides housekeeping service to the hotel room like cleaning.
     """
@@ -106,7 +106,7 @@ def housekeeping_service_request(reason:str, room_number=ROOM_NUMBER) -> str:
     return f'''{{
                   "function-name": "housekeeping_service_request",
                   "parameters": {{
-                      "room_number": "{room_number}",
+                      "room_number": "{ROOM_NUMBER}",
                       "reason" : "{reason}"
                   }}
               }}'''
@@ -140,7 +140,7 @@ class requestFoodFromRestaurant(BaseModel):
 
 
 @tool(args_schema=requestFoodFromRestaurant, return_direct=True)
-def order_resturant_item(item_name: str, item_quantity:int,  dine_in_type: str, room_number=ROOM_NUMBER) -> str:
+def order_resturant_item(item_name: str, item_quantity:int,  dine_in_type: str) -> str:
     """
     Place order to the restaurant for food items with specified details. For example, I want to order a pizza from the restaurant.
 
@@ -165,7 +165,7 @@ def order_resturant_item(item_name: str, item_quantity:int,  dine_in_type: str, 
                   "parameters": {{
                       "item_name": "{item_name}",
                       "item_quantity" : "{item_quantity}",
-                      "room_number": "{room_number}",
+                      "room_number": "{ROOM_NUMBER}",
                       "dine_in_type": "{dine_in_type}"
                   }}
               }}'''
@@ -248,7 +248,7 @@ class RoomAmenitiesRequest(BaseModel):
 
 
 @tool(args_schema=RoomAmenitiesRequest, return_direct=True)
-def request_room_amenity(requested_amenity: str, room_number=ROOM_NUMBER):
+def request_room_amenity(requested_amenity: str):
     """
     Request for room amenities like towel, pillow, blanket etc. Order for room amenities like towel, pillow, blanket etc.
 
@@ -260,7 +260,8 @@ def request_room_amenity(requested_amenity: str, room_number=ROOM_NUMBER):
 
     return f'''{{
                   "function-name": "request_room_amenity",
-                  "parameters": {{"requested_amenity": "{requested_amenity}","room_number": "{room_number}"}}
+                  "parameters": {{"requested_amenity": "{requested_amenity}",
+                  "room_number": "{ROOM_NUMBER}"}}
               }}'''
 
 class RoomMaintenanceRequestInput(BaseModel):
@@ -268,7 +269,7 @@ class RoomMaintenanceRequestInput(BaseModel):
 
 
 @tool(args_schema=RoomMaintenanceRequestInput, return_direct=True)
-def request_room_maintenance(issue: str, room_number=ROOM_NUMBER):
+def request_room_maintenance(issue: str):
     """
     Resolves room issues regarding hardware like toilteries, furnitures, windows or electric gadgets like FAN, TC, AC etc of hotel room.
 
@@ -282,23 +283,28 @@ def request_room_maintenance(issue: str, room_number=ROOM_NUMBER):
                   "function-name": "request_room_maintenance",
                   "parameters": {{
                       "issue": "{issue}",
-                      "room_number": "{room_number}"
+                      "room_number": "{ROOM_NUMBER}"
                   }}
               }}'''
 
 
 class ReminderEntity(BaseModel):
     reminder_message: str = Field(..., description="The reminder message of the customer")
-    reminder_time: str = Field(..., description="The time to remind at")
+    reminder_date : str = Field(..., description="The date or day to remind. For example : today, tomorrow, 12th October etc.")
+    reminder_time: str = Field(..., description="The time to remind at. Time should be in 24 hour format like 16:00")
+
 
 
 @tool(args_schema=ReminderEntity, return_direct=True)
-def request_reminder(reminder_message: str, reminder_time: str, room_number=ROOM_NUMBER):
+def request_reminder(reminder_message: str, reminder_date:str, reminder_time: str):
     """
     Set an alarm or reminder alarm or reminder call for the customer to remind about the message at the mentioned time.
+    For ex,
+        Set a meeting tomorrow at 4PM
 
     Args:
-      reminder_message (str) : The reminder message of the customer
+      reminder_message (str) : The reminder message of the customer.
+      reminder_date (str) : The day to give the reminder. For example : today, tomorrow, 12th October etc.
       reminder_time (str) : The time to remind the customer at.
     Returns
       str: An acknowdelgement message for the customer.
@@ -307,13 +313,12 @@ def request_reminder(reminder_message: str, reminder_time: str, room_number=ROOM
     return f'''{{
                   "function-name": "request_reminder",
                   "parameters": {{
-                      "reminder_time": "{reminder_time}",
-                      "reminder_message": "{reminder_message}",
-                      "room_number": "{room_number}"
+                        "reminder_date" : "{reminder_date}",
+                        "reminder_time": "{reminder_time}",
+                        "reminder_message": "{reminder_message}",
+                        "room_number": "{ROOM_NUMBER}"
                   }}
               }}'''
-
-
 
 
 class ShuttleServiceEntity(BaseModel):
