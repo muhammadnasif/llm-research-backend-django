@@ -291,7 +291,7 @@ def request_room_maintenance(issue: str):
 class ReminderEntity(BaseModel):
     reminder_message: str = Field(..., description="The reminder message of the customer")
     reminder_date : str = Field(..., description="The date or day to remind. For example : today, tomorrow, 12th October etc.")
-    reminder_time: str = Field(..., description="The time to remind at. Time should be in 24 hour format like 16:00")
+    reminder_time: str = Field(..., description="The time to remind at. Time should be in 12 hour format like 4:00PM")
 
 
 

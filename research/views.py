@@ -76,7 +76,7 @@ def llm_startup():
 
     prompt_model = ChatPromptTemplate.from_messages([
         ("system",
-            "only call the function(s) if it can be inferred from the users request, else start follow-up questions to clarify missing parameters."),
+            "only call the function(s) if all the parameters are procided from the users request, else start follow-up questions to clarify missing parameters. Never guess any parameters. "),
         ("human", "{question}")
     ])
 
