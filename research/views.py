@@ -32,8 +32,6 @@ index_name = 'llama-2-rag'
 
 
 def llm_startup():
-    OPENAI_API_KEY = ""
-    PINECONE_API_KEY = ""
 
     # throw exception
     if not OPENAI_API_KEY or OPENAI_API_KEY == "":
@@ -137,7 +135,8 @@ def chatbot_engine(request):
 
         if 'function-name' in llm_response['output']:
             function_info = json.loads(llm_response['output'])
-            answer = None
+            answer = function_info['answer']
+            del function_info['answer']
         else:
             function_info = None
             answer = llm_response['output']

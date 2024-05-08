@@ -84,6 +84,7 @@ def book_room(room_type: str, class_type: str, check_in_date: date, check_out_da
     # return f"Room has been booked for {room_type} {class_type} class from {check_in_date} to {check_out_date}. Mobile number: {mobile_no}."
     return f'''{{
                   "function-name": "book_room",
+                  "answer" : "Room has been booked for {room_type} {class_type} class
                   "parameters": {{
                       "room_type": "{room_type}",
                       "class_type": "{class_type}",
@@ -105,6 +106,7 @@ def housekeeping_service_request(reason:str) -> str:
 
     return f'''{{
                   "function-name": "housekeeping_service_request",
+                  "answer" : "Housekeeping service has been requested for {reason}",
                   "parameters": {{
                       "room_number": "{ROOM_NUMBER}",
                       "reason" : "{reason}"
@@ -127,6 +129,7 @@ def room_recommendation(budget_highest: int) -> str:
 
     return f'''{{
                   "function-name": "room_recommendation",
+                  "answer" : "I recommend you to book a room with a budget of {budget_highest}",
                   "parameters": {{
                       "budget_highest": "{budget_highest}"
                   }}
@@ -162,6 +165,7 @@ def order_resturant_item(item_name: str, item_quantity:int,  dine_in_type: str) 
 
     return f'''{{
                   "function-name": "order_resturant_item",
+                  "answer" : "Your order have been placed for {item_name} with quantity {item_quantity}.",
                   "parameters": {{
                       "item_name": "{item_name}",
                       "item_quantity" : "{item_quantity}",
@@ -188,6 +192,7 @@ def bill_complain_request(complaint: str, room_number=ROOM_NUMBER) -> str:
     # return f"We  have received your complain {complaint}  and notified accounts department to handle the issue. Please keep your patience while we resolve. You will be notified from the front-desk once it is resolved"
     return f'''{{
                   "function-name": "bill_complain_request",
+                  "answer" : "We  have received your complain {complaint}  and notified accounts department to handle the issue. Please keep your patience while we resolve. You will be notified from the front-desk once it is resolved",
                   "parameters": {{
                       "complaint": "{complaint}",
                       "room_number": "{room_number}"
@@ -212,6 +217,7 @@ def transportation_recommendation(location: str) -> str:
     # return f"I recommend to go there by {transport}"
     return f'''{{
                   "function-name": "transportation_recommendation",
+                  "answer" : "Recommendation for transportation to {location} is processing",
                   "parameters": {{
                       "location": "{location}"
                   }}
@@ -235,6 +241,7 @@ def excursion_recommendation(place_type: str) -> str:
     return f'''
             {{
                 "function-name": "excursion_recommendation",
+                "answer" : "Recommendation for {place_type} is processing",
                 "parameters": {{
                     "place_type": "{place_type}"
                 }}
@@ -259,9 +266,11 @@ def request_room_amenity(requested_amenity: str):
     """
 
     return f'''{{
-                  "function-name": "request_room_amenity",
-                  "parameters": {{"requested_amenity": "{requested_amenity}",
-                  "room_number": "{ROOM_NUMBER}"}}
+                    "function-name": "request_room_amenity",
+                    "answer" : "Request for {requested_amenity} is processing",
+                    "parameters": {{
+                        "requested_amenity": "{requested_amenity}",
+                        "room_number": "{ROOM_NUMBER}"}}
               }}'''
 
 class RoomMaintenanceRequestInput(BaseModel):
@@ -281,6 +290,7 @@ def request_room_maintenance(issue: str):
 
     return f'''{{
                   "function-name": "request_room_maintenance",
+                  "answer" : "Request for {issue} is processing",
                   "parameters": {{
                       "issue": "{issue}",
                       "room_number": "{ROOM_NUMBER}"
@@ -312,6 +322,7 @@ def request_reminder(reminder_message: str, reminder_date:str, reminder_time: st
 
     return f'''{{
                   "function-name": "request_reminder",
+                  "answer" : "Reminder for {reminder_message} is set for {reminder_date} at {reminder_time}",
                   "parameters": {{
                         "reminder_date" : "{reminder_date}",
                         "reminder_time": "{reminder_time}",
@@ -343,11 +354,16 @@ def shuttle_service_request(location: str, time: str) -> str:
 
     return f'''{{
                     "function-name": "shuttle_service_request",
+                    "answer" : "Shuttle service has been requested for {location} at {time}",
                     "parameters": {{
                         "location": "{location}",
                         "time": "{time}"
                     }}
                 }}'''
+
+
+class ServiceStatusCheckerEntity(BaseModel):
+    service_id : id = Field(..., description="The name of the service to check the status of")
 
 
 tools = [get_current_temperature,
